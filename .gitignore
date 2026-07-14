@@ -1,0 +1,4 @@
+.gstack/
+output/
+.github/
+node_modules/

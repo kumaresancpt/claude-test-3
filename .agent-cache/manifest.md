@@ -1,0 +1,6 @@
+- generated-at-commit: 9eeaaa67312a0339fd0af04dd62bc2c3ebeaa386
+- branch: feature/login-page
+- generated-at: 2026-07-14T00:00:00Z
+- frontend-stack: react-typescript
+- backend-stack: dotnet-aspnet
+- database-stack: postgresql-efcore

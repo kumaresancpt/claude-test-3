@@ -1,0 +1,37 @@
+:root {
+  --color-primary: #5b21b6;
+  --color-secondary: #353638;
+
+  --color-text-heading: #5b21b6;
+  --color-text-subtitle: #474a5f;
+  --color-text-label: #3b3b3b;
+  --color-text-body: #3c3c3c;
+  --color-text-placeholder: #8390a2;
+  --color-text-footer: #292d32;
+
+  --color-border-input: #b9b9b9;
+  --color-border-checkbox: #252525;
+
+  --color-bg-white: #ffffff;
+  --color-bg-pill-track: #f3f3f3;
+  --color-bg-error: #fdecec;
+  --color-bg-success: #e9f9ee;
+  --color-text-error: #b00020;
+  --color-text-success: #1e7e34;
+  --color-border-error: #b00020;
+  --color-border-success: #1e7e34;
+
+  --font-family-inter: 'Inter', sans-serif;
+  /* Satoshi requires manual font-face setup (not available on Google Fonts) - fallback stack in place */
+  --font-family-satoshi: 'Satoshi', 'Inter', sans-serif;
+
+  --radius-panel: 56px;
+  --radius-pill-track: 48px;
+  --radius-pill-active: 25px;
+  --radius-input: 8px;
+  --radius-checkbox: 2px;
+
+  --panel-width: 596px;
+  --field-width: 400px;
+  --input-height: 48px;
+}
