@@ -1,0 +1,12 @@
+## .NET build output
+bin/
+obj/
+
+## Local secrets / dev-only configuration -- never commit real values
+appsettings.Development.json
+appsettings.*.local.json
+.env
+
+## IDE
+.vs/
+*.user
