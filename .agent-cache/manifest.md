@@ -1,0 +1,6 @@
+- generated-at-commit: PENDING
+- branch: feature/login-page
+- generated-at: 2026-07-14T00:00:00Z
+- frontend-stack: react-typescript
+- backend-stack: dotnet-aspnet
+- database-stack: postgresql-efcore
