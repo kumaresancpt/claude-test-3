@@ -15,6 +15,8 @@ public class AppDbContext : DbContext
 
     public DbSet<AuditLogEntry> AuditLogEntries => Set<AuditLogEntry>();
 
+    public DbSet<Visitor> Visitors => Set<Visitor>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -68,6 +70,27 @@ public class AppDbContext : DbContext
             entity.Property(a => a.UserAgent).HasColumnName("user_agent").HasMaxLength(512).IsRequired();
             entity.Property(a => a.EventType).HasColumnName("event_type").HasConversion<string>().HasMaxLength(32).IsRequired();
             entity.Property(a => a.Result).HasColumnName("result").HasMaxLength(512).IsRequired();
+        });
+
+        modelBuilder.Entity<Visitor>(entity =>
+        {
+            entity.ToTable("visitors");
+            entity.HasKey(v => v.Id);
+            entity.Property(v => v.Id).HasColumnName("id");
+            entity.Property(v => v.Name).HasColumnName("name").HasMaxLength(200).IsRequired();
+            entity.Property(v => v.Company).HasColumnName("company").HasMaxLength(200).IsRequired();
+            entity.Property(v => v.Host).HasColumnName("host").HasMaxLength(200).IsRequired();
+            entity.Property(v => v.Purpose).HasColumnName("purpose").HasConversion<string>().HasMaxLength(32).IsRequired();
+            entity.Property(v => v.CheckInTime).HasColumnName("check_in_time").IsRequired();
+            entity.Property(v => v.CheckOutTime).HasColumnName("check_out_time");
+            entity.Property(v => v.Status).HasColumnName("status").HasConversion<string>().HasMaxLength(32).IsRequired();
+            entity.Property(v => v.BadgeStatus).HasColumnName("badge_status").HasConversion<string>().HasMaxLength(32).IsRequired();
+            entity.Property(v => v.PhoneNumber).HasColumnName("phone_number").HasMaxLength(32);
+            entity.Property(v => v.Email).HasColumnName("email").HasMaxLength(256);
+            entity.Property(v => v.CreatedAt).HasColumnName("created_at");
+            entity.Property(v => v.UpdatedAt).HasColumnName("updated_at");
+            entity.HasIndex(v => v.CheckInTime);
+            entity.HasIndex(v => v.Status);
         });
     }
 }
