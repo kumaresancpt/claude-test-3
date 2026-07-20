@@ -1,0 +1,819 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Visitor Cache Dashboard — Productivity Metrics</title>
+<style>
+/* ── Reset & base ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* palette */
+  --bg:        #0f1117;
+  --surface:   #181c27;
+  --surface2:  #1e2334;
+  --border:    #252a3a;
+  --border2:   #2e3550;
+  --accent:    #7c5cbf;
+  --accent-dim:#4a3580;
+  --green:     #3dba6f;
+  --amber:     #d4900a;
+  --red:       #c0392b;
+  --blue:      #3b82c4;
+  --text:      #e8eaf0;
+  --text2:     #a0a7be;
+  --text3:     #6b7194;
+
+  /* type scale */
+  --f-xs:   11px;
+  --f-sm:   12px;
+  --f-base: 13px;
+  --f-md:   14px;
+  --f-lg:   16px;
+  --f-xl:   20px;
+  --f-2xl:  28px;
+  --f-3xl:  38px;
+}
+
+html { background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, sans-serif; font-size: var(--f-base); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+body { max-width: 1100px; margin: 0 auto; padding: 0 24px 64px; }
+
+/* ── Monospaced numbers ───────────────────────────────────────── */
+.mono { font-family: 'JetBrains Mono', 'Fira Mono', 'Cascadia Code', monospace; font-variant-numeric: tabular-nums; }
+
+/* ── Utility ──────────────────────────────────────────────────── */
+.label {
+  font-size: var(--f-xs);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+.green  { color: var(--green); }
+.amber  { color: var(--amber); }
+.red    { color: var(--red); }
+.blue   { color: var(--blue); }
+.accent { color: var(--accent); }
+.dim    { color: var(--text3); }
+
+hr.rule { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+hr.rule-light { border: none; border-top: 1px solid var(--border); margin: 20px 0; opacity: .5; }
+
+/* ── Page header ──────────────────────────────────────────────── */
+.page-header {
+  border-bottom: 1px solid var(--border);
+  padding: 28px 0 22px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.page-header h1 {
+  font-size: var(--f-xl);
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.page-header h1 span {
+  color: var(--accent);
+}
+.page-header .meta {
+  font-size: var(--f-sm);
+  color: var(--text3);
+  text-align: right;
+  line-height: 1.7;
+}
+
+/* ── Hero KPIs ────────────────────────────────────────────────── */
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 28px 0 0;
+}
+.kpi {
+  background: var(--surface);
+  padding: 20px 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.kpi-val {
+  font-size: var(--f-2xl);
+  font-weight: 700;
+  line-height: 1;
+  font-family: 'JetBrains Mono', 'Fira Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.kpi-val.accent { color: var(--accent); }
+.kpi-val.green  { color: var(--green); }
+.kpi-val.amber  { color: var(--amber); }
+.kpi-lbl {
+  font-size: var(--f-xs);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--text3);
+  margin-top: 2px;
+}
+.kpi-sub {
+  font-size: var(--f-xs);
+  color: var(--text3);
+  margin-top: 3px;
+}
+
+/* ── Section headings ─────────────────────────────────────────── */
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 32px 0 16px;
+}
+.section-head h2 {
+  font-size: var(--f-md);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+.section-head .pill {
+  font-size: var(--f-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+/* ── Charts ───────────────────────────────────────────────────── */
+.charts {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+@media (max-width: 680px) { .charts { grid-template-columns: 1fr; } }
+
+.chart-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 16px 12px;
+}
+.chart-title {
+  font-size: var(--f-xs);
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 14px;
+}
+.bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 150px;
+  border-bottom: 1px solid var(--border2);
+}
+.bcol {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+.bcol .bar {
+  width: 100%;
+  border-radius: 3px 3px 0 0;
+  background: var(--accent-dim);
+  transition: background 0.15s;
+  min-height: 3px;
+}
+.bcol.latest .bar { background: var(--accent); }
+.bcol .bval {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--text3);
+  margin-bottom: 1px;
+}
+.bcol.latest .bval { color: var(--accent); font-weight: 700; }
+.chart-x {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+.chart-x .xlbl {
+  flex: 1;
+  text-align: center;
+  font-size: 9px;
+  color: var(--text3);
+  letter-spacing: 0.02em;
+}
+.chart-x .xlbl.latest { color: var(--accent); font-weight: 700; }
+.chart-note {
+  font-size: var(--f-xs);
+  color: var(--text3);
+  margin-top: 10px;
+  text-align: right;
+}
+
+/* ── At a glance cards ────────────────────────────────────────── */
+.glance {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+.glance-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 18px;
+}
+.glance-card .gc-label {
+  font-size: var(--f-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 600;
+  color: var(--text3);
+  margin-bottom: 8px;
+}
+.glance-card .gc-val {
+  font-size: var(--f-xl);
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  line-height: 1.1;
+}
+.glance-card .gc-sub {
+  font-size: var(--f-xs);
+  color: var(--text3);
+  margin-top: 5px;
+  line-height: 1.5;
+}
+
+/* ── Day block ────────────────────────────────────────────────── */
+.day {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.day-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+.d-title {
+  font-size: var(--f-md);
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.d-title span {
+  font-weight: 400;
+  color: var(--text3);
+  font-size: var(--f-sm);
+}
+.d-tag {
+  font-size: var(--f-xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 20px;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  background: transparent;
+}
+.d-tag.accent { border-color: var(--accent-dim); color: var(--accent); }
+.d-tag.green  { border-color: #1f5c38; color: var(--green); }
+
+.day-body { padding: 20px; }
+
+/* ── Strip ────────────────────────────────────────────────────── */
+.strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.stat {
+  background: var(--bg);
+  padding: 12px 14px;
+}
+.s-val {
+  font-family: 'JetBrains Mono', 'Fira Mono', monospace;
+  font-size: var(--f-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  color: var(--text);
+}
+.s-val.green  { color: var(--green); }
+.s-val.blue   { color: var(--blue); }
+.s-val.amber  { color: var(--amber); }
+.s-val.red    { color: var(--red); }
+.s-lbl {
+  font-size: var(--f-xs);
+  color: var(--text3);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* ── Work list ────────────────────────────────────────────────── */
+.work-title {
+  font-size: var(--f-xs);
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 10px;
+}
+.work {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-bottom: 20px;
+}
+.work li {
+  font-size: var(--f-sm);
+  color: var(--text2);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  line-height: 1.5;
+}
+.work li::before {
+  content: '✓';
+  color: var(--green);
+  font-weight: 700;
+  flex-shrink: 0;
+  font-size: 11px;
+}
+.work li.pending::before { content: '○'; color: var(--amber); }
+.work li.pending { color: var(--text3); }
+
+/* ── Chips ────────────────────────────────────────────────────── */
+.chip {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 1px 7px;
+  border-radius: 12px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.chip-green  { background: #1a3d28; color: var(--green); }
+.chip-blue   { background: #1a2e45; color: var(--blue); }
+.chip-amber  { background: #3d2c0a; color: var(--amber); }
+.chip-purple { background: var(--accent-dim); color: var(--accent); }
+
+/* ── Remarks ──────────────────────────────────────────────────── */
+.remarks { margin-top: 4px; }
+.r-head {
+  font-size: var(--f-xs);
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 6px;
+}
+.r-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 10px 14px;
+  font-size: var(--f-sm);
+  color: var(--text3);
+  font-style: italic;
+  min-height: 38px;
+}
+
+/* ── Token table ──────────────────────────────────────────────── */
+.tbl-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--f-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+thead th {
+  background: var(--surface2);
+  color: var(--text3);
+  font-size: var(--f-xs);
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+}
+thead th:first-child { text-align: left; }
+tbody tr { border-bottom: 1px solid var(--border); }
+tbody tr:last-child { border-bottom: none; }
+tbody tr.total-row { background: var(--surface2); }
+tbody td {
+  padding: 9px 14px;
+  text-align: right;
+  color: var(--text2);
+  font-family: 'JetBrains Mono', monospace;
+}
+tbody td:first-child {
+  text-align: left;
+  color: var(--text);
+  font-family: system-ui, sans-serif;
+  font-weight: 600;
+}
+tbody tr.total-row td { color: var(--text); font-weight: 700; }
+tbody td.hi { color: var(--accent); }
+tbody td.green { color: var(--green); }
+tbody td.amber { color: var(--amber); }
+
+/* ── Insight cards ────────────────────────────────────────────── */
+.insights {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.insight {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 6px 6px 0;
+  padding: 11px 16px;
+  font-size: var(--f-sm);
+  color: var(--text2);
+  line-height: 1.55;
+}
+.insight strong { color: var(--text); }
+.insight.warn { border-left-color: var(--amber); }
+.insight.good { border-left-color: var(--green); }
+
+/* ── Footer ───────────────────────────────────────────────────── */
+.page-footer {
+  border-top: 1px solid var(--border);
+  padding: 18px 0 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: var(--f-xs);
+  color: var(--text3);
+  margin-top: 36px;
+}
+
+/* ── Print (PDF export) ───────────────────────────────────────────
+   Every color above is a var(--...), so re-pointing the palette here
+   flips the whole page to a light, ink-friendly theme for printing —
+   no per-component overrides needed. */
+@media print {
+  @page { size: A4; margin: 14mm 12mm; }
+
+  :root {
+    --bg:        #f4f6fb;
+    --surface:   #ffffff;
+    --surface2:  #eef1f9;
+    --border:    #dbe1ee;
+    --border2:   #c7cfe3;
+    --accent:    #5b3fa0;
+    --accent-dim:#e7e1f7;
+    --green:     #1f7a45;
+    --amber:     #8a5a06;
+    --red:       #a32d2d;
+    --blue:      #1f5a8a;
+    --text:      #1b1f2e;
+    --text2:     #3a3f52;
+    --text3:     #6b7188;
+  }
+
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+
+  html, body { background: var(--bg) !important; max-width: none; }
+
+  /* keep cards/charts/day-blocks from splitting across a page break */
+  .kpi, .chart-panel, .glance-card, .day, .insight { break-inside: avoid; }
+  .charts, .glance, .kpis { break-inside: avoid; }
+  .section-head { break-after: avoid; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PAGE HEADER
+════════════════════════════════════════════════════════════════ -->
+<header class="page-header">
+  <h1>Visitor Cache Dashboard <span>/ Productivity Metrics</span></h1>
+  <div class="meta">
+    Project: SCRUM-16 · visitor-cache-dashboard<br>
+    Stack: React + TypeScript · .NET ASP.NET · PostgreSQL<br>
+    rev. end of day 1 · 2026-07-20
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     HERO KPIs
+════════════════════════════════════════════════════════════════ -->
+<div class="kpis">
+  <div class="kpi">
+    <div class="kpi-val accent mono">3.1M</div>
+    <div class="kpi-lbl">Claude tokens · 1 day</div>
+    <div class="kpi-sub">~93% cache-read (cheap)</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-val mono">5</div>
+    <div class="kpi-lbl">Prompts given</div>
+    <div class="kpi-sub">developer prompts, cumulative</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-val mono">0</div>
+    <div class="kpi-lbl">Tests written</div>
+    <div class="kpi-sub">suite health: backend 14/14 · frontend 26/27 passing</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-val mono">1</div>
+    <div class="kpi-lbl">Build days</div>
+    <div class="kpi-sub">Day 1 of sprint</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-val mono">0</div>
+    <div class="kpi-lbl">Source lines delivered</div>
+    <div class="kpi-sub">no code changed today</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-val mono">1</div>
+    <div class="kpi-lbl">Git commits total</div>
+    <div class="kpi-sub">docs(metrics) day 1</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     ACTIVITY CHARTS
+════════════════════════════════════════════════════════════════ -->
+<div class="section-head">
+  <h2>Activity Dashboard</h2>
+  <span class="pill">Day 1 only</span>
+</div>
+
+<div class="charts">
+
+  <!-- Tokens / day -->
+  <div class="chart-panel">
+    <div class="chart-title">Total tokens / day</div>
+    <div class="bars">
+      <div class="bcol latest">
+        <div class="bval">3.1M</div>
+        <div class="bar" style="height:150px"></div>
+      </div>
+    </div>
+    <div class="chart-x">
+      <div class="xlbl latest">D1</div>
+    </div>
+    <div class="chart-note">max = 3.1M (day 1 baseline)</div>
+  </div>
+
+  <!-- Output tokens / day -->
+  <div class="chart-panel">
+    <div class="chart-title">Output tokens / day</div>
+    <div class="bars">
+      <div class="bcol latest">
+        <div class="bval">25.3k</div>
+        <div class="bar" style="height:150px"></div>
+      </div>
+    </div>
+    <div class="chart-x">
+      <div class="xlbl latest">D1</div>
+    </div>
+    <div class="chart-note">max = 25.3k (day 1 baseline)</div>
+  </div>
+
+  <!-- Prompts / day -->
+  <div class="chart-panel">
+    <div class="chart-title">Developer prompts / day</div>
+    <div class="bars">
+      <div class="bcol latest">
+        <div class="bval">5</div>
+        <div class="bar" style="height:150px"></div>
+      </div>
+    </div>
+    <div class="chart-x">
+      <div class="xlbl latest">D1</div>
+    </div>
+    <div class="chart-note">max = 5 (day 1 baseline)</div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     PROJECT AT A GLANCE
+════════════════════════════════════════════════════════════════ -->
+<div class="section-head">
+  <h2>Project at a Glance</h2>
+  <span class="pill">as of 20 Jul 2026</span>
+</div>
+
+<div class="glance">
+  <div class="glance-card">
+    <div class="gc-label">Source lines delivered</div>
+    <div class="gc-val">0</div>
+    <div class="gc-sub">no code changed today<br>cumulative, net insertions</div>
+  </div>
+  <div class="glance-card">
+    <div class="gc-label">Tests written</div>
+    <div class="gc-val">0</div>
+    <div class="gc-sub">none authored today<br>full suite: backend 14/14 · frontend 26/27 passing</div>
+  </div>
+  <div class="glance-card">
+    <div class="gc-label">Files in repo</div>
+    <div class="gc-val">54</div>
+    <div class="gc-sub">frontend + backend + migrations<br>as of 20 Jul 2026</div>
+  </div>
+  <div class="glance-card">
+    <div class="gc-label">Known issues</div>
+    <div class="gc-val" style="color:#d4900a">1</div>
+    <div class="gc-sub"><code>DashboardPage.test.tsx</code> — ambiguous<br>"Meeting" text match, pending fix</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     DAILY WORK LOG
+════════════════════════════════════════════════════════════════ -->
+<div class="section-head">
+  <h2>Daily Work Log</h2>
+</div>
+
+<!-- DAY 1 — Monday 20 Jul 2026 -->
+<div class="day">
+  <div class="day-head">
+    <div class="d-title">Monday · 20 Jul 2026 <span>— metrics workflow audit &amp; test-suite verification</span></div>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <span class="d-tag accent">Claude Sonnet 5</span>
+      <span class="d-tag">verification</span>
+    </div>
+  </div>
+  <div class="day-body">
+
+    <div class="strip">
+      <div class="stat">
+        <div class="s-val green">1 / 1</div>
+        <div class="s-lbl">planned tasks achieved</div>
+      </div>
+      <div class="stat">
+        <div class="s-val blue">1 → 5</div>
+        <div class="s-lbl">prompts: expected (1/task) → used</div>
+      </div>
+      <div class="stat">
+        <div class="s-val" style="color:#d4900a">+4</div>
+        <div class="s-lbl">extra prompts (workflow Q&amp;A)</div>
+      </div>
+      <div class="stat">
+        <div class="s-val">+0 / −0</div>
+        <div class="s-lbl">frontend lines (no code changed)</div>
+      </div>
+      <div class="stat">
+        <div class="s-val">+0 / −0</div>
+        <div class="s-lbl">backend lines (no code changed)</div>
+      </div>
+      <div class="stat">
+        <div class="s-val" style="color:#d4900a">0</div>
+        <div class="s-lbl">dev lines changed (manual)</div>
+      </div>
+      <div class="stat">
+        <div class="s-val" style="color:#d4900a">40 / 41</div>
+        <div class="s-lbl">tests passing (1 discovered failure)</div>
+      </div>
+      <div class="stat">
+        <div class="s-val blue">1</div>
+        <div class="s-lbl">git commits</div>
+      </div>
+      <div class="stat">
+        <div class="s-val blue">3.1M</div>
+        <div class="s-lbl">Claude tokens</div>
+      </div>
+    </div>
+
+    <div class="work-title">work completed</div>
+    <ul class="work">
+      <li>Audited <code>METRICS_UPDATE_GUIDE.md</code> and ran the automated §1 data-gathering steps (token JSONL parse, git diff/log, test suites) <span class="chip chip-blue">verification</span></li>
+      <li>Installed frontend <code>node_modules</code> via <code>npm ci</code> — hadn't been installed on this machine before <span class="chip chip-green">tooling</span></li>
+      <li>Ran backend test suite (<code>dotnet test</code>) — 14/14 passing <span class="chip chip-green">verified</span></li>
+      <li>Ran frontend test suite (<code>jest</code>) — 26/27 passing; discovered a pre-existing failure in <code>DashboardPage.test.tsx:70</code> (ambiguous "Meeting" text match across two elements), not caused by any change today <span class="chip chip-amber">found issue</span></li>
+      <li>Confirmed zero source-code changes and zero prior commits on <code>feature/login-page</code> within this tracking period <span class="chip chip-blue">audit</span></li>
+      <li class="pending">Fix the failing <code>DashboardPage.test.tsx</code> assertion <span class="chip chip-amber">pending</span></li>
+    </ul>
+
+    <div class="remarks">
+      <div class="r-head">remarks</div>
+      <div class="r-box"><em>— awaiting remarks —</em></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     TOKEN USAGE TABLE
+════════════════════════════════════════════════════════════════ -->
+<div class="section-head">
+  <h2>Token Usage</h2>
+  <span class="pill">measured from session JSONL</span>
+</div>
+
+<div class="tbl-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Day</th>
+        <th>Total</th>
+        <th>Output</th>
+        <th>Cache read</th>
+        <th>Cache create</th>
+        <th>Input (raw)</th>
+        <th>Messages</th>
+        <th>Session ID (prefix)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Day 1 · 2026-07-20</td>
+        <td class="hi">3.09M</td>
+        <td>25.3k</td>
+        <td class="green">2.88M</td>
+        <td>181.0k</td>
+        <td class="dim">96</td>
+        <td>48</td>
+        <td class="dim">7b0878a4…</td>
+      </tr>
+      <tr class="total-row">
+        <td>1-day total</td>
+        <td class="hi">3.09M</td>
+        <td>25.3k</td>
+        <td class="green">2.88M</td>
+        <td>181.0k</td>
+        <td>96</td>
+        <td>48</td>
+        <td class="dim">—</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<p style="font-size:11px;color:var(--text3);margin-top:8px;">
+  Reading this: cache-read tokens are ~$0 cost. Output tokens drive the bill. Figures are main session only — no sub-agents dispatched.
+</p>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     KEY INSIGHTS
+════════════════════════════════════════════════════════════════ -->
+<div class="section-head">
+  <h2>Key Insights</h2>
+</div>
+
+<div class="insights">
+  <div class="insight warn">
+    <strong>Day 1 (as tracked) was a verification day, not a feature day.</strong> The dashboard/backend code this report describes already existed in the repository when this tracking period began. Rather than fabricate a delivery narrative, the actual measured activity — installing deps, running both test suites, and discovering 1 pre-existing failure — is logged as-is: 0 code lines, 1 docs commit.
+  </div>
+  <div class="insight">
+    <strong>93% of tokens were cache-read</strong> (2.88M of 3.09M). Raw input was only 96 tokens. Cache-creation spend (181.0k) reflects re-establishing context for this session.
+  </div>
+  <div class="insight warn">
+    <strong>5 prompts for 1 planned task</strong> — 4 extra prompts were spent on workflow Q&amp;A (clarifying how the metrics guide runs, what data is automatic vs. manual, and scope of the day-1 rewrite). Not correction overhead — clarifying questions.
+  </div>
+  <div class="insight">
+    <strong>Remaining to finish:</strong> Fix the failing <code>DashboardPage.test.tsx</code> "Meeting" text-match assertion · run <code>dotnet ef database update</code> to apply the visitors migration · wire live API calls in DashboardPage (currently uses mock data) · PR review &amp; merge to main.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     FOOTER
+════════════════════════════════════════════════════════════════ -->
+<footer class="page-footer">
+  <span>visitor-cache-dashboard · SCRUM-16 · Changepond</span>
+  <span>rev. end of day 1 · 2026-07-20 · Claude Sonnet 5</span>
+</footer>
+
+</body>
+</html>
